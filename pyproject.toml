@@ -7,7 +7,7 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.scripts]
-start-bot = "haikubot:main""
+start-bot = "haikubot:main"
 
 [tool.poetry.dependencies]
 python = "^3.9"
