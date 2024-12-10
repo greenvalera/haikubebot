@@ -13,15 +13,14 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 IS_DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-MESSEGE_LIMIT_DEFAULT = 20
-
 client = OpenAI()
 
 # Load configuration from config.json
 with open('config.json', 'r', encoding='utf-8') as config_file:
     config = json.load(config_file)
 
-message_limit = config.get('message_limit', MESSEGE_LIMIT_DEFAULT)
+message_limit = config.get('message_limit')
+model = config.get('model')
 
 # Initialize the dictionary for message buffers per chat
 messages_buffers = {}
@@ -39,7 +38,7 @@ async def handle_message(update: Update, context: CallbackContext):
         if len(messages_buffers[chat_id]) == message_limit:
             prompt = "З цих повідомлень: " + "\n".join(messages_buffers[chat_id]) + "\nЗгенеруй хокку мовою цих повідомлень."
             completion = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model,
                 messages=[{"role": "user", "content": prompt}]
             )
             haiku = completion.choices[0].message.content.strip()
