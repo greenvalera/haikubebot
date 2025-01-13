@@ -39,6 +39,9 @@ async def store_message(update: Update, context: CallbackContext):
     if update.message.from_user.is_bot or update.message.text is None:
         return
 
+    if IS_DEBUG:
+        print(f"Chat {update.message.chat_id}: {update.message.text}")
+        
     chat_id = update.message.chat_id
     if chat_id not in chat_history:
         chat_history[chat_id] = []
