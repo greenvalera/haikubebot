@@ -2,7 +2,7 @@ import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
-from telegram.ext import Application, MessageHandler, filters, CallbackContext
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackContext, ContextTypes, CommandHandler
 from telegram import Update
 
 # Load environment variables from .env file
@@ -23,24 +23,67 @@ with open('config.json', 'r', encoding='utf-8') as config_file:
 message_limit = config.get('message_limit')
 model = config.get('model')
 
+# Global variable to store messages
+chat_history = {}
+
 def invoce_model(prompt):
     completion = client.chat.completions.create(
-        model,
+        model=model,
         messages=[{"role": "user", "content": prompt}]
     )
     return completion.choices[0].message.content.strip()
 
+MAX_MESSAGES_PER_CHAT = 1000
 
+async def store_message(update: Update, context: CallbackContext):
+    if update.message.from_user.is_bot or update.message.text is None:
+        return
+
+    chat_id = update.message.chat_id
+    if chat_id not in chat_history:
+        chat_history[chat_id] = []
+
+    # Store the message text with the author's name
+    first_name = update.message.from_user.first_name
+    last_name = update.message.from_user.last_name
+    chat_history[chat_id].append({
+        'from_user': f"{first_name} {last_name}",
+        'text': update.message.text
+    })
+
+    # Ensure only the latest MAX_MESSAGES_PER_CHAT messages are kept
+    if len(chat_history[chat_id]) > MAX_MESSAGES_PER_CHAT:
+        chat_history[chat_id] = chat_history[chat_id][-MAX_MESSAGES_PER_CHAT:]
+
+async def get_chat_history(chat_id, limit=100):
+    if chat_id in chat_history:
+        return chat_history[chat_id][-limit:]
+    return []
+
+prompt_to_analize = """
+Ось останні {n} повідомлень чату: {messages}.
+Повідомлення представлені в форматі "author: message".
+Аналізуй їх зміст за по тексу 'message' та виведи коротку суть про що обговорюється в чаті.
+Не відповідай на повідомлення, а лише коротко підсумуй суть їх змісту.
+Переказуй факти, а не власні думки.
+Враховуй, що автори повідомлень можуть бути різними.
+Якщо важливо посилання на автора, використовуй його ім'я.
+Заміть посилання "автор на ім'я Жовта Зелень" використовуй просто ім'я "Жовта Зелень".
+Не перераховуй всі повідомлення, лише виведи коротку суть.
+"""
 # Команда /analyze
 async def analyze(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         n = int(context.args[0])
         chat_id = update.message.chat_id
-        messages = await context.bot.get_chat_history(chat_id, limit=n)
-        text_messages = [msg.text for msg in messages if msg.text]
+        messages = await get_chat_history(chat_id, limit=n)
+        # Include authors' names in the model context
+        text_messages = [f"{msg['from_user']}: {msg['text']}" for msg in messages if 'text' in msg]
+
+        print(f"Analyzing {n} messages: {text_messages}")
 
         # Аналіз повідомлень за допомогою LangChain
-        response = invoce_model(f"Ось останні {n} повідомлень: {' '.join(text_messages)}. Що ти можеш сказати про них?")
+        response = invoce_model(prompt_to_analize.format(n=n, messages="\n".join(text_messages)))
         await update.message.reply_text(response)
     except (IndexError, ValueError):
         await update.message.reply_text("Будь ласка, вкажи правильну кількість повідомлень. Наприклад: /analyze 5")
@@ -68,7 +111,8 @@ async def handle_message(update: Update, context: CallbackContext):
             messages_buffers[chat_id] = []
 
 if __name__ == "__main__":
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, store_message))
     application.add_handler(analyze_handler)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.run_polling()
