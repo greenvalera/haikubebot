@@ -41,7 +41,7 @@ async def store_message(update: Update, context: CallbackContext):
 
     if IS_DEBUG:
         print(f"Chat {update.message.chat_id}: {update.message.text}")
-        
+
     chat_id = update.message.chat_id
     if chat_id not in chat_history:
         chat_history[chat_id] = []
@@ -97,15 +97,18 @@ messages_buffers = {}
 analyze_handler = CommandHandler('analyze', analyze)
 
 async def handle_message(update: Update, context: CallbackContext):
+    print("handle_message")
     if update.message and update.message.text:
         chat_id = update.effective_chat.id
         text = update.message.text.strip()
+
         if IS_DEBUG:
             print(f"Chat {chat_id}: {text}")
         # Initialize buffer for this chat if it doesn't exist
         if chat_id not in messages_buffers:
             messages_buffers[chat_id] = []
         messages_buffers[chat_id].append(text)
+
         if len(messages_buffers[chat_id]) == message_limit:
             prompt = "З цих повідомлень: " + "\n".join(messages_buffers[chat_id]) + "\nЗгенеруй хокку мовою цих повідомлень."
             haiku = invoce_model(prompt)
@@ -115,8 +118,8 @@ async def handle_message(update: Update, context: CallbackContext):
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, store_message))
     application.add_handler(analyze_handler)
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.run_polling()
 

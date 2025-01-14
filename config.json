@@ -1,4 +1,4 @@
 {
     "model": "gpt-4o-mini",
-    "message_limit": 20
+    "message_limit": 5
 }
