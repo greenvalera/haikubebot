@@ -21,7 +21,7 @@ with open('config.json', 'r', encoding='utf-8') as config_file:
 
 
 message_limit = config.get('message_limit')
-model = config.get('model')
+model = config.get('model')  # Use model from config file
 
 # Global variable to store messages
 chat_history = {}
