@@ -13,6 +13,19 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 IS_DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
+PROMPT_HAIKU = """
+Згенеруй хокку мовою цих повідомлень, беручі до уваги умови.
+
+Повідомлення:
+{messages}
+
+Умови:
+1. Хокку складається з трьох рядків.
+2. Ігноруй смайлики та інші символи.
+3. Використовуй лише слова з повідомлень.
+4. Мова хокку - українська.
+"""
+
 client = OpenAI()
 
 # Load configuration from config.json
@@ -110,7 +123,8 @@ async def handle_message(update: Update, context: CallbackContext):
         messages_buffers[chat_id].append(text)
 
         if len(messages_buffers[chat_id]) == message_limit:
-            prompt = "З цих повідомлень: " + "\n".join(messages_buffers[chat_id]) + "\nЗгенеруй хокку мовою цих повідомлень."
+            messeges_str = "\n".join(messages_buffers[chat_id])
+            prompt = PROMPT_HAIKU.format(messages=messeges_str)
             haiku = invoce_model(prompt)
             await update.message.reply_text(haiku)
             # Clear the buffer for this chat
