@@ -1,9 +1,11 @@
 import os
 import json
+import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackContext, ContextTypes, CommandHandler
 from telegram import Update
+import db_service
 
 # Load environment variables from .env file
 load_dotenv()
@@ -55,22 +57,69 @@ async def store_message(update: Update, context: CallbackContext):
         print(f"Chat {update.message.chat_id}: {update.message.text}")
 
     chat_id = update.message.chat_id
+    user = update.message.from_user
+    text = update.message.text
+    
+    # Store in local memory for backward compatibility
     if chat_id not in chat_history:
         chat_history[chat_id] = []
 
     # Store the message text with the author's name
-    first_name = update.message.from_user.first_name
-    last_name = update.message.from_user.last_name
+    first_name = user.first_name
+    last_name = user.last_name
     chat_history[chat_id].append({
-        'from_user': f"{first_name} {last_name}",
-        'text': update.message.text
+        'from_user': f"{first_name} {last_name if last_name else ''}",
+        'text': text
     })
 
     # Ensure only the latest MAX_MESSAGES_PER_CHAT messages are kept
     if len(chat_history[chat_id]) > MAX_MESSAGES_PER_CHAT:
         chat_history[chat_id] = chat_history[chat_id][-MAX_MESSAGES_PER_CHAT:]
+    
+    # Save to database
+    try:
+        # Get or create user
+        db_service.get_or_create_user(
+            user_id=user.id,
+            username=user.username if user.username else '',
+            first_name=first_name,
+            last_name=last_name
+        )
+        
+        # Update user's last activity
+        db_service.update_user_last_activity(user.id)
+        
+        # Save message
+        db_service.save_message(
+            chat_id=chat_id,
+            user_id=user.id,
+            text=text
+        )
+
+        if IS_DEBUG:
+            print(f"Saved message to database: {text}")
+    except Exception as e:
+        if IS_DEBUG:
+            print(f"Error saving to database: {e}")
 
 async def get_chat_history(chat_id, limit=100):
+    # First try to get messages from database
+    try:
+        db_messages = db_service.get_chat_messages(chat_id, limit)
+        if db_messages and len(db_messages) > 0:
+            # Format messages to match the expected structure
+            return [
+                {
+                    'from_user': f"{msg.get('first_name', '')} {msg.get('last_name', '')}".strip(),
+                    'text': msg.get('text', '')
+                }
+                for msg in db_messages
+            ]
+    except Exception as e:
+        if IS_DEBUG:
+            print(f"Error retrieving from database: {e}")
+    
+    # Fall back to in-memory storage if database fails or has no messages
     if chat_id in chat_history:
         return chat_history[chat_id][-limit:]
     return []
@@ -108,14 +157,14 @@ messages_buffers = {}
 
 analyze_handler = CommandHandler('analyze', analyze)
 
-async def handle_message(update: Update, context: CallbackContext):
-    print("handle_message")
+async def process_haiku_answer(update: Update, context: CallbackContext):
     if update.message and update.message.text:
         chat_id = update.effective_chat.id
         text = update.message.text.strip()
 
         if IS_DEBUG:
-            print(f"Chat {chat_id}: {text}")
+            print(f"Handle message in chat {chat_id}: {text}")
+            
         # Initialize buffer for this chat if it doesn't exist
         if chat_id not in messages_buffers:
             messages_buffers[chat_id] = []
@@ -129,10 +178,13 @@ async def handle_message(update: Update, context: CallbackContext):
             # Clear the buffer for this chat
             messages_buffers[chat_id] = []
 
+async def handle_message(update: Update, context: CallbackContext):
+    await store_message(update, context)
+    await process_haiku_answer(update, context)
+
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, store_message))
     application.add_handler(analyze_handler)
     application.run_polling()
 
