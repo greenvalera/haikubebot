@@ -37,7 +37,7 @@ with open('config.json', 'r', encoding='utf-8') as config_file:
 message_limit = config.get('message_limit')
 model = config.get('model')  # Use model from config file
 
-def invoce_model(prompt):
+def invoke_model(prompt):
     completion = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}]
@@ -112,7 +112,7 @@ async def process_haiku_answer(update: Update, context: CallbackContext):
                 
                 # Generate haiku
                 prompt = PROMPT_HAIKU.format(messages=messages_text)
-                haiku = invoce_model(prompt)
+                haiku = invoke_model(prompt)
                 await update.message.reply_text(haiku)
                 
                 # Reset counter
