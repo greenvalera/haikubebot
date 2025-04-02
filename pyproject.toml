@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.scripts]
 start-bot = "haikubot:main"
 init-db = "init_db:main"
+db-sync = "sync_data:main"
 
 [tool.poetry.dependencies]
 python = "^3.9"
