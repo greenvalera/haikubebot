@@ -98,26 +98,34 @@ def get_chat_messages(chat_id: int, limit: int = 100) -> List[Dict[str, Any]]:
         limit: Maximum number of messages to retrieve
         
     Returns:
-        List of messages with user information
+        List of messages with user information in format:
+        {
+            'from_user': 'First Last',
+            'text': 'message text',
+            'created_at': 'ISO datetime string'
+        }
     """
-    # Join with users table to get user information alongside messages
+    # Get messages and join with users table using a subquery
     result = supabase.from_("messages") \
-        .select("*, users!inner(first_name, last_name)") \
+        .select("*, users!messages_user_id_fkey(first_name, last_name)") \
         .eq("chat_id", chat_id) \
         .order("created_at", desc=True) \
         .limit(limit) \
         .execute()
     
-    # Format the result to have first_name and last_name at the top level
-    # since the new API returns nested objects
+    # Format the result to match the expected structure for haiku generation
     formatted_data = []
     for item in result.data:
         message = dict(item)
         if "users" in message and message["users"]:
             user_data = message.pop("users")
-            message["first_name"] = user_data.get("first_name", "")
-            message["last_name"] = user_data.get("last_name", "")
-        formatted_data.append(message)
+            first_name = user_data.get("first_name", "")
+            last_name = user_data.get("last_name", "")
+            formatted_data.append({
+                'from_user': f"{first_name} {last_name}".strip(),
+                'text': message.get('text', ''),
+                'created_at': message.get('created_at', '')
+            })
     
     return formatted_data
 
