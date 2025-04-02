@@ -124,7 +124,11 @@ def sync_messages(prod_client: Client, dev_client: Client,
         else:
             print(f"Message already exists: {message['id']}")
 
-if __name__ == "__main__":
+def main():
+    """
+    Main entry point for the database synchronization script.
+    Parses command line arguments and runs the sync operation.
+    """
     import argparse
     
     parser = argparse.ArgumentParser(description="Sync data from production to development database")
@@ -132,4 +136,7 @@ if __name__ == "__main__":
                       help="Number of days to look back for data sync (default: 30)")
     
     args = parser.parse_args()
-    sync_data(args.days) 
+    sync_data(args.days)
+
+if __name__ == "__main__":
+    main() 
