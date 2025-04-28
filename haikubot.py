@@ -1,11 +1,20 @@
 import os
 import json
 import datetime
+import logging
 from dotenv import load_dotenv
 from openai import OpenAI
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackContext, ContextTypes, CommandHandler
 from telegram import Update
 import db_service
+import random  # Додано для генерації випадкових чисел
+from handlers.message_handler import store_message
+from handlers.haiku_handler import process_haiku_answer
+from handlers.response_handler import process_bot_response
+from utils.config import TELEGRAM_TOKEN
+
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -47,84 +56,18 @@ def invoke_model(prompt):
 # Dictionary to track message counts per chat
 message_counts = {}
 
-async def store_message(update: Update, context: CallbackContext):
-    if update.message.from_user.is_bot or update.message.text is None:
-        return
 
-    if IS_DEBUG:
-        print(f"Chat {update.message.chat_id}: {update.message.text}")
-
-    chat_id = update.message.chat_id
-    user = update.message.from_user
-    text = update.message.text
+async def handle_message(update, context):
+    """
+    Main message handler that orchestrates all other handlers
     
-    # Save to database
-    try:
-        # Get or create user
-        db_service.get_or_create_user(
-            user_id=user.id,
-            username=user.username if user.username else '',
-            first_name=user.first_name,
-            last_name=user.last_name
-        )
-        
-        # Update user's last activity
-        db_service.update_user_last_activity(user.id)
-        
-        # Save message
-        db_service.save_message(
-            chat_id=chat_id,
-            user_id=user.id,
-            text=text
-        )
-
-        if IS_DEBUG:
-            print(f"Saved message to database: {text}")
-    except Exception as e:
-        if IS_DEBUG:
-            print(f"Error saving to database: {e}")
-
-async def process_haiku_answer(update: Update, context: CallbackContext):
-    if update.message and update.message.text:
-        chat_id = update.effective_chat.id
-        
-        # Initialize counter for this chat if it doesn't exist
-        if chat_id not in message_counts:
-            message_counts[chat_id] = 0
-        
-        # Increment message count
-        message_counts[chat_id] += 1
-        
-        # Check if we've reached the message limit
-        if message_counts[chat_id] >= message_limit:
-            try:
-                # Get the last N messages from the database
-                messages = db_service.get_chat_messages(chat_id, limit=message_limit)
-                
-                # Format messages for the prompt with structured data
-                messages_text = "\n".join([
-                    f"Автор: {msg['from_user']}\n"
-                    f"Дата: {msg.get('created_at', '')}\n"
-                    f"Текст: {msg['text']}\n"
-                    f"---"
-                    for msg in messages
-                ])
-                
-                # Generate haiku
-                prompt = PROMPT_HAIKU.format(messages=messages_text)
-                haiku = invoke_model(prompt)
-                await update.message.reply_text(haiku)
-                
-                # Reset counter
-                message_counts[chat_id] = 0
-                
-            except Exception as e:
-                if IS_DEBUG:
-                    print(f"Error generating haiku: {e}")
-
-async def handle_message(update: Update, context: CallbackContext):
+    Args:
+        update: Telegram update
+        context: Callback context
+    """
     await store_message(update, context)
     await process_haiku_answer(update, context)
+    await process_bot_response(update, context)
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
