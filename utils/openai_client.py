@@ -10,14 +10,13 @@ client = OpenAI()
 
 def invoke_model(prompt: str) -> str:
     """
-    Invoke OpenAI model with the given prompt
+    Invoke OpenAI model with the given prompt.
     
     Args:
-        prompt: The prompt to send to the model
-        model: The model to use
+        prompt: The prompt to send to the model.
         
     Returns:
-        str: The model's response
+        str: The model's response.
     """
     completion = client.chat.completions.create(
         model=MODEL,
