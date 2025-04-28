@@ -1,4 +1,10 @@
 {
   "message_limit": 20,
-  "model": "o3-mini"
+  "model": "o3-mini",
+  "bot": {
+    "user_id": 777000,
+    "username": "haikubot",
+    "first_name": "Haiku",
+    "last_name": "Bot"
+  }
 }
