@@ -1,13 +1,10 @@
 import os
 import json
-import datetime
 import logging
 from dotenv import load_dotenv
 from openai import OpenAI
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackContext, ContextTypes, CommandHandler
 from telegram import Update
-import db_service
-import random  # Додано для генерації випадкових чисел
 from handlers.message_handler import store_message
 from handlers.haiku_handler import process_haiku_answer
 from handlers.response_handler import process_bot_response
@@ -21,21 +18,6 @@ load_dotenv()
 
 # Tokens from the environment
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-IS_DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-
-PROMPT_HAIKU = """
-Згенеруй хокку мовою цих повідомлень, беручі до уваги умови.
-
-Повідомлення:
-{messages}
-
-Умови:
-1. Пиши хокку у форматі 5-7-5. 
-2. Мова хокку - українська.
-3. Ігноруй смайлики та інші символи.
-4. Використовуй інформацію про автора та час повідомлення тільки для розуміння контексту розмови. Для самого хокку використовуй тільки тексти повідомлень.
-"""
 
 client = OpenAI()
 
@@ -51,6 +33,7 @@ def invoke_model(prompt):
         model=model,
         messages=[{"role": "user", "content": prompt}]
     )
+
     return completion.choices[0].message.content.strip()
 
 # Dictionary to track message counts per chat
