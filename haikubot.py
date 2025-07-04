@@ -1,16 +1,13 @@
 import os
 import json
-import datetime
 import logging
 from dotenv import load_dotenv
 from openai import OpenAI
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, CallbackContext, ContextTypes, CommandHandler
-from telegram import Update
-import db_service
-import random  # Додано для генерації випадкових чисел
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, CommandHandler
 from handlers.message_handler import store_message
 from handlers.haiku_handler import process_haiku_answer
 from handlers.response_handler import process_bot_response
+from handlers.query_handler import handle_query_command
 from utils.config import TELEGRAM_TOKEN
 
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +68,12 @@ async def handle_message(update, context):
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    
+    # Add command handlers
+    application.add_handler(CommandHandler("ask", handle_query_command))
+    
+    # Add message handler
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
     application.run_polling()
 

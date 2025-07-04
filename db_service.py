@@ -179,3 +179,62 @@ def get_chat_messages(chat_id: int, limit: int = 100, before_message_id: int = N
         logging.info(f"No chat messages found for chat_id={chat_id} (get_chat_messages)")
         return []
     return formatted_data
+
+
+def get_chat_messages_by_period(chat_id: int, minutes: int = 60, exclude_bots: bool = True) -> List[Dict[str, Any]]:
+    """
+    Retrieve messages for a specific chat from the database within a time period
+    
+    Args:
+        chat_id: Telegram chat ID
+        minutes: Number of minutes to look back from now
+        exclude_bots: Whether to exclude bot messages
+        
+    Returns:
+        List of messages with user information in format:
+        {
+            'from_user': 'First Last',
+            'text': 'message text',
+            'created_at': 'ISO datetime string'
+        }
+    """
+    # Get current time (use test time if configured)
+    try:
+        from utils.config import TEST_CURRENT_TIME
+        current_time = TEST_CURRENT_TIME if TEST_CURRENT_TIME else datetime.datetime.now()
+        if TEST_CURRENT_TIME:
+            logging.info(f"[get_chat_messages_by_period] Using test current time: {current_time}")
+    except ImportError:
+        current_time = datetime.datetime.now()
+    
+    # Calculate the time threshold
+    time_threshold = current_time - datetime.timedelta(minutes=minutes)
+    time_threshold_iso = time_threshold.isoformat()
+    
+    # Get messages and join with users table using a subquery
+    query = supabase.from_("messages") \
+        .select("*, users!messages_user_id_fkey(first_name, last_name, isBot)") \
+        .eq("chat_id", chat_id) \
+        .gte("created_at", time_threshold_iso)
+    
+    if exclude_bots:
+        query = query.eq("users.isBot", False)
+    
+    result = query.order("created_at", desc=False).execute()
+    
+    # Format the result to match the expected structure
+    formatted_data = []
+    for item in result.data:
+        message = dict(item)
+        if "users" in message and message["users"]:
+            user_data = message.pop("users")
+            first_name = user_data.get("first_name", "")
+            last_name = user_data.get("last_name", "")
+            formatted_data.append({
+                'from_user': f"{first_name} {last_name}".strip(),
+                'text': message.get('text', ''),
+                'created_at': message.get('created_at', '')
+            })
+    
+    logging.info(f"Found {len(formatted_data)} messages for chat_id={chat_id} in last {minutes} minutes")
+    return formatted_data
