@@ -2,7 +2,6 @@
 OpenAI client and related functions
 """
 from openai import OpenAI
-import os
 from dotenv import load_dotenv
 from .config import MODEL
 # Initialize OpenAI client
