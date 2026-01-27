@@ -6,5 +6,10 @@
     "username": "haikubot",
     "first_name": "Haiku",
     "last_name": "Bot"
+  },
+  "plugins": {
+    "translator": {
+      "enabled": true
+    }
   }
 }

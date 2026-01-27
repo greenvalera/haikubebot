@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python312"]
+
+[phases.install]
+cmds = ["python install_requirements.py"]
+
+[start]
+cmd = "python haikubot.py"

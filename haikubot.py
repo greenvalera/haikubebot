@@ -9,6 +9,7 @@ from handlers.haiku_handler import process_haiku_answer
 from handlers.response_handler import process_bot_response
 from handlers.query_handler import handle_query_command
 from utils.config import TELEGRAM_TOKEN
+from plugin_loader import load_plugins
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -54,12 +55,16 @@ async def handle_message(update, context):
 
 if __name__ == "__main__":
     application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    
+
     # Add command handlers
     application.add_handler(CommandHandler("ask", handle_query_command))
-    
-    # Add message handler
+
+    # Load plugins before the catch-all text handler
+    plugins_config = config.get("plugins", {})
+    loaded_plugins = load_plugins(application, plugins_config)
+
+    # Add message handler (catch-all, must be last)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
+
     application.run_polling()
 
