@@ -1,5 +1,5 @@
 [phases.install]
-cmds = ["python install_requirements.py"]
+cmds = ["python -m ensurepip --upgrade", "python install_requirements.py"]
 
 [start]
 cmd = "python haikubot.py"
