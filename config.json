@@ -1,6 +1,6 @@
 {
-  "message_limit": 20,
-  "model": "o3-mini",
+  "message_limit": 3,
+  "model": "gpt-5-mini",
   "bot": {
     "user_id": 777000,
     "username": "haikubot",

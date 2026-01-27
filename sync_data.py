@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
 from dotenv import load_dotenv
 from supabase import create_client, Client
 

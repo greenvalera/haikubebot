@@ -1,8 +1,11 @@
 # CLAUDE.md for HaikuBot
 
 ## Commands
-- Install: `poetry install`
-- Run: `poetry run start-bot` or `python haikubot.py`
+- Create venv: `python -m venv .venv`
+- Activate (Windows): `.venv\Scripts\activate`
+- Activate (Linux/Mac): `source .venv/bin/activate`
+- Install: `pip install -r requirements.txt`
+- Run: `python haikubot.py`
 - Format: `black .`
 - Lint: `flake8 haikubot.py`
 - Type check: `mypy haikubot.py`
