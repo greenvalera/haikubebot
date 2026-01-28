@@ -1,5 +1,5 @@
 {
-  "message_limit": 3,
+  "message_limit": 20,
   "model": "gpt-5-mini",
   "bot": {
     "user_id": 777000,
