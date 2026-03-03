@@ -39,11 +39,16 @@ async def store_message(update: Update, context: CallbackContext):
         db_service.update_user_last_activity(user.id)
         
         # Save message
+        reply_to_tg_id = None
+        if update.message.reply_to_message:
+            reply_to_tg_id = update.message.reply_to_message.message_id
+
         db_service.save_message(
             chat_id=chat_id,
             user_id=user.id,
             text=text,
-            tg_id=update.message.message_id
+            tg_id=update.message.message_id,
+            reply_to_tg_id=reply_to_tg_id,
         )
 
         if IS_DEBUG:

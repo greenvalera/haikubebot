@@ -76,7 +76,7 @@ def update_user_last_activity(user_id: int) -> None:
 
 import json
 
-def save_message(chat_id: int, user_id: int, text: str, haiku_source_ids: Optional[List[int]] = None, tg_id: Optional[int] = None) -> List[Dict[str, Any]]:
+def save_message(chat_id: int, user_id: int, text: str, haiku_source_ids: Optional[List[int]] = None, tg_id: Optional[int] = None, reply_to_tg_id: Optional[int] = None) -> List[Dict[str, Any]]:
     # TODO: Якщо повідомлення містить повідомлення бота, зберігати серіалізовані id повідомлень, для яких воно згенероване, в окремому полі (наприклад, 'generated_for_message_ids')
     """
     Save a message to the database
@@ -100,7 +100,9 @@ def save_message(chat_id: int, user_id: int, text: str, haiku_source_ids: Option
         message_data["haiku_source_ids"] = json.dumps(haiku_source_ids)
     if tg_id is not None:
         message_data["tg_id"] = tg_id
-    
+    if reply_to_tg_id is not None:
+        message_data["reply_to_tg_id"] = reply_to_tg_id
+
     # Insert data into the messages table
     result = supabase.table("messages").insert(message_data).execute()
     
@@ -129,7 +131,7 @@ def get_messages_by_ids(message_ids: List[int]) -> List[Dict[str, Any]]:
     messages_by_id = {msg["id"]: msg for msg in result.data}
     return [messages_by_id[mid] for mid in message_ids if mid in messages_by_id]
 
-def get_chat_messages(chat_id: int, limit: int = 100, before_message_id: int = None, exclude_bots: bool = False) -> List[Dict[str, Any]]:
+def get_chat_messages(chat_id: int, limit: int = 100, before_message_id: int = None, exclude_bots: bool = False, exclude_replies: bool = False) -> List[Dict[str, Any]]:
     """
     Retrieve messages for a specific chat from the database
     
@@ -151,6 +153,8 @@ def get_chat_messages(chat_id: int, limit: int = 100, before_message_id: int = N
         .eq("chat_id", chat_id)
     if exclude_bots:
         query = query.eq("users.isBot", False)
+    if exclude_replies:
+        query = query.is_("reply_to_tg_id", "null")
     if before_message_id is not None:
         # Get created_at for before_message_id
         msg = supabase.from_("messages").select("created_at").eq("id", before_message_id).single().execute()
@@ -238,3 +242,43 @@ def get_chat_messages_by_period(chat_id: int, minutes: int = 60, exclude_bots: b
     
     logging.info(f"Found {len(formatted_data)} messages for chat_id={chat_id} in last {minutes} minutes")
     return formatted_data
+
+
+def get_thread_messages(chat_id: int, bot_tg_id: int) -> List[Dict[str, Any]]:
+    """
+    Retrieve all messages that are direct replies to a specific bot post (by tg_id).
+    Requires the 'reply_to_tg_id' column in the messages table.
+
+    Args:
+        chat_id: Telegram chat ID
+        bot_tg_id: Telegram message ID of the bot's post
+
+    Returns:
+        List of messages in thread order with 'from_user', 'text', 'created_at', 'is_bot'
+    """
+    try:
+        result = supabase.from_("messages") \
+            .select("*, users!messages_user_id_fkey(first_name, last_name, isBot)") \
+            .eq("chat_id", chat_id) \
+            .eq("reply_to_tg_id", bot_tg_id) \
+            .order("created_at", desc=False) \
+            .execute()
+
+        formatted_data = []
+        for item in result.data:
+            message = dict(item)
+            if "users" in message and message["users"]:
+                user_data = message.pop("users")
+                first_name = user_data.get("first_name", "")
+                last_name = user_data.get("last_name", "")
+                is_bot = user_data.get("isBot", False)
+                formatted_data.append({
+                    'from_user': f"{first_name} {last_name}".strip(),
+                    'text': message.get('text', ''),
+                    'created_at': message.get('created_at', ''),
+                    'is_bot': is_bot,
+                })
+        return formatted_data
+    except Exception as e:
+        logging.warning(f"[get_thread_messages] Failed (column may not exist yet): {e}")
+        return []

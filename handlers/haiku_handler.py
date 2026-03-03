@@ -25,11 +25,17 @@ async def process_haiku_answer(update: Update, context: CallbackContext):
     """
     if update.message and update.message.text:
         chat_id = update.effective_chat.id
-        
+
+        # Don't count replies to bot messages toward haiku generation
+        if (update.message.reply_to_message
+                and update.message.reply_to_message.from_user
+                and update.message.reply_to_message.from_user.is_bot):
+            return
+
         # Initialize counter for this chat if it doesn't exist
         if chat_id not in message_counts:
             message_counts[chat_id] = 0
-        
+
         # Increment message count
         message_counts[chat_id] += 1
         
@@ -37,7 +43,7 @@ async def process_haiku_answer(update: Update, context: CallbackContext):
         if message_counts[chat_id] >= MESSAGE_LIMIT:
             try:
                 # Get the last N messages from the database, excluding bot messages
-                messages = db_service.get_chat_messages(chat_id, limit=MESSAGE_LIMIT, exclude_bots=True)
+                messages = db_service.get_chat_messages(chat_id, limit=MESSAGE_LIMIT, exclude_bots=True, exclude_replies=True)
                 if not messages:
                     logging.info(f"[haiku_handler] No chat history found for chat_id={chat_id}")
                 
