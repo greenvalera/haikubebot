@@ -8,6 +8,7 @@ from pathlib import Path
 from docx import Document
 from docx.oxml.ns import qn
 from openai import OpenAI
+from utils.config import TRANSLATION_MODEL
 
 from .translator import translate_texts
 
@@ -81,7 +82,7 @@ def translate_docx(
     source_lang: str,
     target_lang: str,
     client: OpenAI,
-    model: str = "gpt-5.2",
+    model: str = TRANSLATION_MODEL,
 ) -> None:
     """Translate all text in a .docx file."""
     doc = Document(str(input_path))

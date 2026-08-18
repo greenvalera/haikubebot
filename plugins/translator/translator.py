@@ -7,6 +7,7 @@ import json
 import time
 
 from openai import OpenAI
+from utils.config import TRANSLATION_MODEL
 
 
 BATCH_SIZE = 30
@@ -33,7 +34,7 @@ def translate_text(
     source_lang: str,
     target_lang: str,
     client: OpenAI,
-    model: str = "gpt-5.2",
+    model: str = TRANSLATION_MODEL,
 ) -> str:
     """Translate a single text string."""
     if not text or not text.strip():
@@ -47,7 +48,7 @@ def translate_texts(
     source_lang: str,
     target_lang: str,
     client: OpenAI,
-    model: str = "gpt-5.2",
+    model: str = TRANSLATION_MODEL,
 ) -> list[str]:
     """Translate a list of text strings in batches."""
     if not texts:

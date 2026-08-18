@@ -6,7 +6,7 @@ import re
 from telegram import Update
 from telegram.ext import CallbackContext
 import db_service
-from utils.config import IS_DEBUG, TEST_CHAT_ID
+from utils.config import HISTORY_ANALYSIS_MODEL, IS_DEBUG, TEST_CHAT_ID
 from utils.openai_client import invoke_model
 
 def parse_time_period(time_str: str) -> int:
@@ -172,7 +172,7 @@ async def handle_query_command(update: Update, context: CallbackContext):
             print(f"[query_handler] Sending prompt to LLM: {prompt[:200]}...")
         
         # Get response from LLM
-        response = invoke_model(prompt)
+        response = invoke_model(prompt, model=HISTORY_ANALYSIS_MODEL)
         
         # Send response to user
         response_text = f"📊 Аналіз за останні {time_period_str}:\n\n{response}"
@@ -185,4 +185,4 @@ async def handle_query_command(update: Update, context: CallbackContext):
         logging.error(f"[query_handler] Error processing query: {e}")
         await update.message.reply_text(
             "Вибачте, сталася помилка при обробці вашого запиту. Спробуйте пізніше."
-        ) 
+        )
