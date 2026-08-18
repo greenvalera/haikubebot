@@ -7,6 +7,7 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 from openai import OpenAI
+from utils.config import TRANSLATION_MODEL
 
 from .translator import translate_texts
 
@@ -17,7 +18,7 @@ def translate_xlsx(
     source_lang: str,
     target_lang: str,
     client: OpenAI,
-    model: str = "gpt-5.2",
+    model: str = TRANSLATION_MODEL,
 ) -> None:
     """Translate all text in an .xlsx file."""
     wb = load_workbook(str(input_path))

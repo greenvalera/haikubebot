@@ -41,5 +41,19 @@ with open('config.json', 'r', encoding='utf-8') as config_file:
 
 # Get configuration values
 MESSAGE_LIMIT = config.get('message_limit')
-MODEL = config.get('model')
+
+
+def get_model(env_name: str, config_name: str, default: str = None) -> str:
+    """Read a model name from the environment, then fall back to config.json."""
+    return os.getenv(env_name) or config.get(config_name, default)
+
+
+ANSWER_MODEL = get_model('ANSWER_MODEL', 'answer_model')
+HAIKU_MODEL = get_model('OPENAI_HAIKU_MODEL', 'haiku_model', ANSWER_MODEL)
+HISTORY_ANALYSIS_MODEL = get_model(
+    'OPENAI_HISTORY_ANALYSIS_MODEL', 'history_analysis_model', ANSWER_MODEL
+)
+TRANSLATION_MODEL = get_model(
+    'OPENAI_TRANSLATION_MODEL', 'translation_model', ANSWER_MODEL
+)
 BOT_USER = config.get('bot')

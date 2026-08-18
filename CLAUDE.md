@@ -43,8 +43,8 @@ haikubot.py                  Entry point: sets up Telegram handlers + loads plug
 
 ## Configuration
 
-- `config.json`: `message_limit`, `model` (OpenAI model name), `bot` (synthetic DB user), `plugins` (enabled plugins)
-- `.env`: `TELEGRAM_TOKEN`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY`, `DEBUG`, `RESPONSE_TRIGGER_PROBABILITY`, optional `TEST_CHAT_ID`/`TEST_CURRENT_TIME`
+- `config.json`: fallback values for `message_limit`, `answer_model`, `haiku_model`, `history_analysis_model`, `translation_model`, `bot`, and `plugins`.
+- `.env`: `TELEGRAM_TOKEN`, `OPENAI_API_KEY`, `ANSWER_MODEL`, `OPENAI_HAIKU_MODEL`, `OPENAI_HISTORY_ANALYSIS_MODEL`, `OPENAI_TRANSLATION_MODEL`, `SUPABASE_URL`, `SUPABASE_KEY`, `DEBUG`, `RESPONSE_TRIGGER_PROBABILITY`, optional `TEST_CHAT_ID`/`TEST_CURRENT_TIME`. Environment model variables take priority over `config.json`.
 
 ## Code Style
 

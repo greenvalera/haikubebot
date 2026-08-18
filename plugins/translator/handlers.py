@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 from openai import OpenAI
+from utils.config import TRANSLATION_MODEL
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
 
@@ -101,7 +102,7 @@ def _translate_file(
     from .xlsx_handler import translate_xlsx
 
     client = OpenAI()
-    model = "gpt-5.2"
+    model = TRANSLATION_MODEL
 
     ext = input_path.suffix.lower()
     if ext == ".docx":

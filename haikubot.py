@@ -2,7 +2,6 @@ import os
 import json
 import logging
 from dotenv import load_dotenv
-from openai import OpenAI
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, CommandHandler
 from handlers.message_handler import store_message
 from handlers.haiku_handler import process_haiku_answer
@@ -20,22 +19,9 @@ load_dotenv()
 # Tokens from the environment
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 
-client = OpenAI()
-
 # Load configuration from config.json
 with open('config.json', 'r', encoding='utf-8') as config_file:
     config = json.load(config_file)
-
-message_limit = config.get('message_limit')
-model = config.get('model')  # Use model from config file
-
-def invoke_model(prompt):
-    completion = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    return completion.choices[0].message.content.strip()
 
 # Dictionary to track message counts per chat
 message_counts = {}
@@ -67,4 +53,3 @@ if __name__ == "__main__":
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     application.run_polling()
-

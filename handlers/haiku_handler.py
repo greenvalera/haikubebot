@@ -4,7 +4,7 @@ Handler for generating haikus
 from telegram import Update
 from telegram.ext import CallbackContext
 import db_service
-from utils.config import IS_DEBUG, MESSAGE_LIMIT, BOT_USER
+from utils.config import BOT_USER, HAIKU_MODEL, IS_DEBUG, MESSAGE_LIMIT
 from utils.openai_client import invoke_model
 from utils.prompts import PROMPT_HAIKU
 import logging
@@ -61,7 +61,7 @@ async def process_haiku_answer(update: Update, context: CallbackContext):
 
                 # Generate haiku
                 prompt = PROMPT_HAIKU.format(messages=messages_text)
-                haiku = invoke_model(prompt)
+                haiku = invoke_model(prompt, model=HAIKU_MODEL)
                 logging.info(f"[haiku_handler] Згенеровано хайку для chat_id={chat_id}: {haiku}")
                 sent_message = await update.message.reply_text(haiku)
 
@@ -94,4 +94,4 @@ async def process_haiku_answer(update: Update, context: CallbackContext):
                 
             except Exception as e:
                 if IS_DEBUG:
-                    print(f"Error generating haiku: {e}") 
+                    print(f"Error generating haiku: {e}")
