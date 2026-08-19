@@ -14,7 +14,7 @@ async def store_message(update: Update, context: CallbackContext):
         update: Telegram update
         context: Callback context
     """
-    if update.message.text is None:
+    if not update.message or update.message.text is None:
         return
 
     if IS_DEBUG:
@@ -55,4 +55,4 @@ async def store_message(update: Update, context: CallbackContext):
             print(f"Saved message to database: {text}")
     except Exception as e:
         if IS_DEBUG:
-            print(f"Error saving to database: {e}") 
+            print(f"Error saving to database: {e}")
